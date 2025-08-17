@@ -227,18 +227,20 @@ export function CanvasWrapper({
   }
 
   return (
-    <div className="border border-gray-300 rounded-lg overflow-hidden bg-white shadow-lg">
-      <canvas
-        ref={canvasRef}
-        width={imageData.displayWidth}
-        height={imageData.displayHeight}
-        className="cursor-crosshair"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onDoubleClick={handleDoubleClick}
-        style={{ display: "block" }}
-      />
+    <div className="flex items-center justify-center w-full h-full">
+      <div className="border border-gray-300 rounded-lg overflow-hidden bg-white shadow-lg">
+        <canvas
+          ref={canvasRef}
+          width={imageData.displayWidth}
+          height={imageData.displayHeight}
+          className="cursor-crosshair"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onDoubleClick={handleDoubleClick}
+          style={{ display: "block" }}
+        />
+      </div>
     </div>
   )
 }

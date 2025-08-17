@@ -36,6 +36,7 @@ export interface TextLayer {
   fontStyle?: string
   textDecoration?: string
   shadowOpacity?: number
+  zIndex: number
 }
 
 interface EditorState {
@@ -61,6 +62,8 @@ interface EditorStore extends HistoryState {
   deleteTextLayer: (id: string) => void
   moveLayerUp: (id: string) => void
   moveLayerDown: (id: string) => void
+  bringToFront: (id: string) => void
+  sendToBack: (id: string) => void
   duplicateLayer: (id: string) => void
   toggleLayerLock: (id: string) => void
   toggleLayerVisibility: (id: string) => void
@@ -127,9 +130,15 @@ export const useEditorStore = create<EditorStore>()(
     // Text layer actions
     addTextLayer: (layer) => {
       const current = get()
+      // Calculate the next z-index value
+      const maxZIndex = current.present.textLayers.length > 0 
+        ? Math.max(...current.present.textLayers.map(l => l.zIndex))
+        : 0
+      const layerWithZIndex = { ...layer, zIndex: maxZIndex + 1 }
+      
       const newPresent = {
         ...current.present,
-        textLayers: [...current.present.textLayers, layer],
+        textLayers: [...current.present.textLayers, layerWithZIndex],
         selectedLayerId: layer.id,
       }
       set(createHistoryState(newPresent, current))
@@ -160,7 +169,11 @@ export const useEditorStore = create<EditorStore>()(
       const index = layers.findIndex((layer) => layer.id === id)
 
       if (index < layers.length - 1) {
-        ;[layers[index], layers[index + 1]] = [layers[index + 1], layers[index]]
+        // Swap z-index values instead of array positions
+        const tempZIndex = layers[index].zIndex
+        layers[index].zIndex = layers[index + 1].zIndex
+        layers[index + 1].zIndex = tempZIndex
+        
         const newPresent = { ...current.present, textLayers: layers }
         set(createHistoryState(newPresent, current))
       }
@@ -172,7 +185,39 @@ export const useEditorStore = create<EditorStore>()(
       const index = layers.findIndex((layer) => layer.id === id)
 
       if (index > 0) {
-        ;[layers[index], layers[index - 1]] = [layers[index - 1], layers[index]]
+        // Swap z-index values instead of array positions
+        const tempZIndex = layers[index].zIndex
+        layers[index].zIndex = layers[index - 1].zIndex
+        layers[index - 1].zIndex = tempZIndex
+        
+        const newPresent = { ...current.present, textLayers: layers }
+        set(createHistoryState(newPresent, current))
+      }
+    },
+
+    bringToFront: (id) => {
+      const current = get()
+      const layers = [...current.present.textLayers]
+      const layer = layers.find((l) => l.id === id)
+      
+      if (layer) {
+        const maxZIndex = Math.max(...layers.map(l => l.zIndex))
+        layer.zIndex = maxZIndex + 1
+        
+        const newPresent = { ...current.present, textLayers: layers }
+        set(createHistoryState(newPresent, current))
+      }
+    },
+
+    sendToBack: (id) => {
+      const current = get()
+      const layers = [...current.present.textLayers]
+      const layer = layers.find((l) => l.id === id)
+      
+      if (layer) {
+        const minZIndex = Math.min(...layers.map(l => l.zIndex))
+        layer.zIndex = minZIndex - 1
+        
         const newPresent = { ...current.present, textLayers: layers }
         set(createHistoryState(newPresent, current))
       }
@@ -183,11 +228,13 @@ export const useEditorStore = create<EditorStore>()(
       const layerToDuplicate = current.present.textLayers.find((layer) => layer.id === id)
 
       if (layerToDuplicate) {
+        const maxZIndex = Math.max(...current.present.textLayers.map(l => l.zIndex))
         const newLayer: TextLayer = {
           ...layerToDuplicate,
           id: `text-${Date.now()}`,
           x: layerToDuplicate.x + 20,
           y: layerToDuplicate.y + 20,
+          zIndex: maxZIndex + 1,
         }
         const newPresent = {
           ...current.present,
